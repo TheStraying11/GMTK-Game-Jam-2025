@@ -52,6 +52,7 @@ local function indexof(tbl, val)
 end
 
 function statemachine:switch(state)
+	print("switch")
 	self.current = {state}
 	if state.enter ~= nil then
 		state:enter()
@@ -59,13 +60,20 @@ function statemachine:switch(state)
 end
 
 function statemachine:push(state)
+	print("push")
 	table.insert(self.current, state)
 	if state.enter ~= nil then
 		state:enter()
 	end
+	print("Stack after push:")
+	for i, s in ipairs(self.current) do
+		print(i, s)
+	end
+	print("Stack length:", #statemachine.current)
 end
 
 function statemachine:pop(state)
+	print("pop")
 	table.remove(self.current, indexof(self.current, state))
 	if state.exit ~= nil then
 		state:exit()
@@ -110,6 +118,7 @@ function states.menu:enter() -- the `love.load()` of this state
 			100,
 			50,
 			function(ins, x, y, button, istouch, presses)
+				print('popup!')
 				statemachine:push(states.popup)
 			end
 		)
@@ -164,6 +173,7 @@ function states.popup:enter()
 			100,
 			50,
 			function(ins, x, y, button, istouch, presses)
+				print("pop button")
 				statemachine:pop(states.popup)
 			end
 		)
@@ -171,6 +181,7 @@ function states.popup:enter()
 end
 
 function states.popup:draw()
+	print("making popup!")
 	love.graphics.print(loadTable("save").gold, 500, 500)
 	for index, btn in ipairs(self.buttons) do
 		btn:draw()
@@ -203,50 +214,50 @@ function love.update(dt)
 end
 
 function love.draw()
+	love.graphics.clear()
+	print(#statemachine.current)
 	for _, state in ipairs(statemachine.current) do
 		if state.draw ~= nil then
+			print('state: '..tostring(state)..' has draw')
 			state:draw()
+		else
+			print('state: '..tostring(state)..' doesnt have draw')
 		end
 	end
 end
 
 function love.keypressed(key, scancode, isrepeat)
-	for _, state in ipairs(statemachine.current) do
-		if state.keypressed ~= nil then
-			state:keypressed(key, scancode, isrepeat)
-		end
+	local topState = statemachine.current[#statemachine.current]
+	if topState and topState.keypressed then
+		topState:keypressed(key, scancode, isrepeat)
 	end
 end
 
 function love.keyreleased(key, scancode, isrepeat)
-	for _, state in ipairs(statemachine.current) do
-		if state.keyreleased ~= nil then
-			state:keyreleased(key, scancode, isrepeat)
-		end
+	local topState = statemachine.current[#statemachine.current]
+	if topState and topState.keyreleased then
+		topState:keyreleased(key, scancode, isrepeat)
 	end
 end
 
 function love.mousemoved(x, y, dx, dy, istouch)
-	for _, state in ipairs(statemachine.current) do
-		if state.mousemoved ~= nil then
-			state:mousemoved(x, y, dx, dy, istouch)
-		end
+	local topState = statemachine.current[#statemachine.current]
+	if topState and topState.mousemoved then
+		topState:mousemoved(x, y, dx, dy, istouch)
 	end
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
-	for _, state in ipairs(statemachine.current) do
-		if state.mousepressed ~= nil then
-			state:mousepressed(x, y, button, istouch, presses)
-		end
+	local topState = statemachine.current[#statemachine.current]
+	if topState and topState.mousepressed then
+		topState:mousepressed(x, y, button, istouch, presses)
 	end
 end
 
 function love.mousereleased(x, y, button, istouch, presses)
-	for _, state in ipairs(statemachine.current) do
-		if state.mousereleased ~= nil then
-			state:mousereleased(x, y, button, istouch, presses)
-		end
+	local topState = statemachine.current[#statemachine.current]
+	if topState and topState.mousereleased then
+		topState:mousereleased(x, y, button, istouch, presses)
 	end
 end
 --endregion

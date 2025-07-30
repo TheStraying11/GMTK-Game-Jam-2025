@@ -93,7 +93,7 @@ end
 	End of Ui Elements
 ]]
 
-prototypes = {
+local prototypes = {
 	ui = {
 		button = setmetatable(button, {
 				__call = button.new
