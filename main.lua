@@ -58,7 +58,7 @@ function states.menu:enter() -- the `love.load()` of this state
 			end
 		),
 		button(
-			'Settings',
+			'+ 100 Gold',
 			{1, 1, 1, 1},
 			{1, 0, 0, 1},
 			100,
