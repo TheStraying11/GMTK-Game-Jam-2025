@@ -6,10 +6,40 @@ local statemachine = {
 	current = {}
 }
 
+local function serialize(obj, level)
+	level = level or 1
+	local s = ""
+	if type(obj) == "number" then
+		s = s..tostring(obj)
+	elseif type(obj) == "string" then
+		s = s..string.format("%q", obj)
+	elseif type(obj) == "boolean" then
+		s = s..tostring(obj)
+	elseif type(obj) == "table" then
+		s = s.."{\n"
+		for k,v in pairs(obj) do
+			s = s..string.rep("\t",level)..k.." = "..serialize(v, level+1)..",\n"
+		end
+		s = s..string.rep("\t", level-1).."}"
+	else
+		error("Cannot serialize type: "..type(obj))
+	end
+	return s
+end
+
+local function saveTable(name, tbl)
+	return love.filesystem.write(name..".lua", "return "..serialize(tbl))
+end
+
+local function loadTable(name)
+	return love.filesystem.load(name..".lua")()
+end
+
 local states = {
 	menu = {},
 	main = {},
-	settings = {}
+	settings = {},
+	popup = {}
 }
 
 local function indexof(tbl, val)
@@ -46,7 +76,7 @@ end
 function states.menu:enter() -- the `love.load()` of this state
 	self.buttons = {
 		button(
-			'New Game',
+			'New Save',
 			{1, 1, 1, 1},
 			{1, 0, 0, 1},
 			100,
@@ -54,11 +84,11 @@ function states.menu:enter() -- the `love.load()` of this state
 			100,
 			50,
 			function(ins, x, y, button, istouch, presses)
-				statemachine:switch(states.main)
+				saveTable("save", {gold=0})
 			end
 		),
 		button(
-			'+ 100 Gold',
+			'Add 100 Gold',
 			{1, 1, 1, 1},
 			{1, 0, 0, 1},
 			100,
@@ -66,7 +96,21 @@ function states.menu:enter() -- the `love.load()` of this state
 			100,
 			50,
 			function(ins, x, y, button, istouch, presses)
-				statemachine:switch(states.settings)
+				local s = loadTable("save")
+				s.gold = s.gold + 100
+				saveTable("save", s)
+			end
+		),
+		button(
+			'Print gold',
+			{1, 1, 1, 1},
+			{1, 0, 0, 1},
+			100,
+			340,
+			100,
+			50,
+			function(ins, x, y, button, istouch, presses)
+				statemachine:push(states.popup)
 			end
 		)
 	}
@@ -109,9 +153,40 @@ function states.settings:draw()
 end
 --endregion
 
+function states.popup:enter()
+	self.buttons = {
+		button(
+			"Close",
+			{1, 1, 1, 1},
+			{1, 0, 0, 1},
+			100,
+			340,
+			100,
+			50,
+			function(ins, x, y, button, istouch, presses)
+				statemachine:pop(states.popup)
+			end
+		)
+	}
+end
+
+function states.popup:draw()
+	love.graphics.print(loadTable("save").gold, 500, 500)
+	for index, btn in ipairs(self.buttons) do
+		btn:draw()
+	end
+end
+
+function states.popup:mousepressed(x, y, button, istouch, presses)
+	for _, btn in ipairs(self.buttons) do
+		btn:handleTouch(x, y, button, istouch, presses)
+	end
+end
+
 --region State machine hooking
 function love.load()
 	vx, vy = love.graphics.getDimensions()
+	love.filesystem.load(love.filesystem.getSaveDirectory().."/save.lua")
 	statemachine:switch(states.menu)
 end
 
